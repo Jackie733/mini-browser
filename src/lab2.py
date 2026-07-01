@@ -48,7 +48,12 @@ class Browser:
 
         self.scroll = 0
 
+        self.window.bind("<Up>", self.scrollup)
         self.window.bind("<Down>", self.scrolldown)
+
+        self.window.bind("<MouseWheel>", self.mousewheel)
+        self.window.bind("<Button-4>", self.mousewheel)
+        self.window.bind("<Button-5>", self.mousewheel)
 
     def draw(self):
         self.canvas.delete("all")
@@ -61,6 +66,17 @@ class Browser:
 
     def scrolldown(self, e):
         self.scroll += SCROLL_STEP
+        self.draw()
+
+    def scrollup(self, e):
+        self.scroll = max(0, self.scroll - SCROLL_STEP)
+        self.draw()
+
+    def mousewheel(self, e):
+        if e.num == 4 or e.delta > 0:
+            self.scroll = max(0, self.scroll - SCROLL_STEP)
+        elif e.num == 5 or e.delta < 0:
+            self.scroll += SCROLL_STEP
         self.draw()
 
     def load(self, url):
