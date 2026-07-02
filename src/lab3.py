@@ -5,6 +5,8 @@ import webtools
 from lab1 import URL
 from lab2 import HEIGHT, HSTEP, VSTEP, WIDTH, Browser
 
+FONTS = {}
+
 
 class Text:
     def __init__(self, text):
@@ -14,6 +16,15 @@ class Text:
 class Tag:
     def __init__(self, tag):
         self.tag = tag
+
+
+def get_font(size, weight, style):
+    key = (size, weight, style)
+    if key not in FONTS:
+        font = tkinter.font.Font(size=size, weight=weight, slant=style)
+        label = tkinter.Label(font=font)
+        FONTS[key] = (font, label)
+    return FONTS[key][0]
 
 
 def lex(body):
@@ -80,7 +91,7 @@ class Layout:
             self.cursor_y += VSTEP
 
     def word(self, word):
-        font = tkinter.font.Font(self.size, self.weight, self.style)
+        font = get_font(self.size, self.weight, self.size)
         w = font.measure(word)
         if self.cursor_x + w > WIDTH - HSTEP:
             self.flush()
