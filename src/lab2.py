@@ -22,7 +22,7 @@ def lex(body):
     return text
 
 
-def layout(text):
+def layout(text, width=WIDTH):
     display_list = []
     cursor_x, cursor_y = HSTEP, VSTEP
     for c in text:
@@ -33,7 +33,7 @@ def layout(text):
 
         display_list.append((cursor_x, cursor_y, c))
         cursor_x += HSTEP
-        if cursor_x >= WIDTH - HSTEP:
+        if cursor_x >= width - HSTEP:
             cursor_y += VSTEP
             cursor_x = HSTEP
         webtools.record("layout", display_list)
@@ -43,10 +43,13 @@ def layout(text):
 class Browser:
     def __init__(self):
         self.window = tkinter.Tk()
-        self.canvas = tkinter.Canvas(self.window, width=WIDTH, height=HEIGHT)
-        self.canvas.pack()
+        self.width = WIDTH
+        self.height = HEIGHT
+        self.canvas = tkinter.Canvas(self.window, width=self.width, height=self.height)
+        self.canvas.pack(fill="both", expand=True)
 
         self.scroll = 0
+        self.text = None
 
         self.window.bind("<Up>", self.scrollup)
         self.window.bind("<Down>", self.scrolldown)
@@ -55,10 +58,12 @@ class Browser:
         self.window.bind("<Button-4>", self.mousewheel)
         self.window.bind("<Button-5>", self.mousewheel)
 
+        self.window.bind("<Configure>", self.resize)
+
     def draw(self):
         self.canvas.delete("all")
         for x, y, c in self.display_list:
-            if y > self.scroll + HEIGHT:
+            if y > self.scroll + self.height:
                 continue
             if y + VSTEP < self.scroll:
                 continue
@@ -81,9 +86,17 @@ class Browser:
 
     def load(self, url):
         body = url.request()
-        text = lex(body)
-        self.display_list = layout(text)
+        self.text = lex(body)
+        self.display_list = layout(self.text, self.width)
         self.draw()
+
+    def resize(self, e):
+        if e.width != self.width or e.height != self.height:
+            self.width = e.width
+            self.height = e.height
+            if self.text is not None:
+                self.display_list = layout(self.text, self.width)
+                self.draw()
 
 
 if __name__ == "__main__":
