@@ -1,5 +1,6 @@
-import tkinter
 import os
+import tkinter
+
 import webtools
 from lab1 import URL
 
@@ -79,11 +80,11 @@ class Browser:
     def get_emoji_image(self, char):
         code_point = f"{ord(char):X}"
         img_path = f"emojis/{code_point}.png"
-        
+
         # Check cache first
         if img_path in self.emoji_cache:
             return self.emoji_cache[img_path]
-        
+
         # Load from disk if exists
         if os.path.exists(img_path):
             try:
@@ -111,7 +112,7 @@ class Browser:
                 continue
             if y + VSTEP < self.scroll:
                 continue
-            
+
             if item_type == "text":
                 self.canvas.create_text(x, y - self.scroll, text=val)
             elif item_type == "image":
@@ -124,11 +125,16 @@ class Browser:
             if doc_height > self.height:
                 SCROLLBAR_WIDTH = 12
                 scrollbar_top = (self.scroll / doc_height) * self.height
-                scrollbar_bottom = ((self.scroll + self.height) / doc_height) * self.height
+                scrollbar_bottom = (
+                    (self.scroll + self.height) / doc_height
+                ) * self.height
                 self.canvas.create_rectangle(
-                    self.width - SCROLLBAR_WIDTH, scrollbar_top,
-                    self.width, scrollbar_bottom,
-                    fill="blue", outline=""
+                    self.width - SCROLLBAR_WIDTH,
+                    scrollbar_top,
+                    self.width,
+                    scrollbar_bottom,
+                    fill="blue",
+                    outline="",
                 )
 
     def scrolldown(self, e):
@@ -149,9 +155,22 @@ class Browser:
         self.clamp_scroll()
         self.draw()
 
-    def load(self, url):
-        body = url.request()
-        self.text = lex(body)
+    def load(self, url_str):
+        if url_str == "about:blank":
+            self.text = ""
+            self.display_list = []
+            self.scroll = 0
+            self.draw()
+            return
+
+        try:
+            url = URL(url_str)
+            body = url.request()
+            self.text = lex(body)
+        except Exception as e:
+            print(f"Error loading {url_str}: {e}")
+            self.text = ""
+
         self.display_list = layout(self.text, self.width, self.get_emoji_image)
         self.scroll = 0
         self.clamp_scroll()
@@ -170,5 +189,7 @@ class Browser:
 if __name__ == "__main__":
     import sys
 
-    Browser().load(URL(sys.argv[1]))
+    url = sys.argv[1] if len(sys.argv) > 1 else "about:blank"
+
+    Browser().load(url)
     tkinter.mainloop()
