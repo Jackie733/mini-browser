@@ -69,12 +69,32 @@ class Browser:
                 continue
             self.canvas.create_text(x, y - self.scroll, text=c)
 
+        if self.display_list:
+            max_y = self.display_list[-1][1]
+            doc_height = max_y + VSTEP
+            if doc_height > self.height:
+                SCROLLBAR_WIDTH = 12
+                scrollbar_top = (self.scroll / doc_height) * self.height
+                scrollbar_bottom = (
+                    (self.scroll + self.height) / doc_height
+                ) * self.height
+                self.canvas.create_rectangle(
+                    self.width - SCROLLBAR_WIDTH,
+                    scrollbar_top,
+                    self.width,
+                    scrollbar_bottom,
+                    fill="blue",
+                    outline="",
+                )
+
     def scrolldown(self, e):
         self.scroll += SCROLL_STEP
+        self.clamp_scroll()
         self.draw()
 
     def scrollup(self, e):
         self.scroll = max(0, self.scroll - SCROLL_STEP)
+        self.clamp_scroll()
         self.draw()
 
     def mousewheel(self, e):
@@ -82,13 +102,22 @@ class Browser:
             self.scroll = max(0, self.scroll - SCROLL_STEP)
         elif e.num == 5 or e.delta < 0:
             self.scroll += SCROLL_STEP
+        self.clamp_scroll()
         self.draw()
 
     def load(self, url):
         body = url.request()
         self.text = lex(body)
         self.display_list = layout(self.text, self.width)
+        self.scroll = 0
+        self.clamp_scroll()
         self.draw()
+
+    def clamp_scroll(self):
+        max_y = self.display_list[-1][1] if self.display_list else 0
+        doc_height = max_y + VSTEP
+        max_scroll = max(0, doc_height - self.height)
+        self.scroll = max(0, min(self.scroll, max_scroll))
 
     def resize(self, e):
         if e.width != self.width or e.height != self.height:
@@ -96,6 +125,7 @@ class Browser:
             self.height = e.height
             if self.text is not None:
                 self.display_list = layout(self.text, self.width)
+                self.clamp_scroll()
                 self.draw()
 
 
