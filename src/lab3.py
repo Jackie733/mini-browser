@@ -19,10 +19,10 @@ class Tag:
         self.tag = tag
 
 
-def get_font(size, weight, style):
-    key = (size, weight, style)
+def get_font(size, weight, style, family=None):
+    key = (size, weight, style, family)
     if key not in FONTS:
-        font = tkinter.font.Font(size=size, weight=weight, slant=style)
+        font = tkinter.font.Font(size=size, weight=weight, slant=style, family=family)
         label = tkinter.Label(font=font)
         FONTS[key] = (font, label)
     return FONTS[key][0]
@@ -61,6 +61,8 @@ class Layout:
         self.is_centered = False
         self.is_superscript = False
         self.in_abbr = False
+        self.in_pre = False
+        self.font_family = None
 
         self.line = []
         for tok in tokens:
@@ -70,8 +72,29 @@ class Layout:
 
     def token(self, tok):
         if isinstance(tok, Text):
-            for word in tok.text.split():
-                self.word(word)
+            if self.in_pre:
+                accum = ""
+                for c in tok.text:
+                    if c == "\n":
+                        if accum:
+                            self.word(accum)
+                            accum = ""
+                        self.flush()
+                    elif c == " ":
+                        if accum:
+                            self.word(accum)
+                            accum = ""
+                        font = get_font(
+                            self.size, self.weight, self.style, self.font_family
+                        )
+                        self.cursor_x += font.measure(" ")
+                    else:
+                        accum += c
+                if accum:
+                    self.word(accum)
+            else:
+                for word in tok.text.split():
+                    self.word(word)
         elif tok.tag == "i":
             self.style = "italic"
         elif tok.tag == "/i":
@@ -104,6 +127,14 @@ class Layout:
             self.in_abbr = True
         elif tok.tag == "/abbr":
             self.in_abbr = False
+        elif tok.tag == "pre":
+            self.flush()
+            self.in_pre = True
+            self.font_family = "Courier"
+        elif tok.tag == "/pre":
+            self.flush()
+            self.in_pre = False
+            self.font_family = None
         elif tok.tag == "br":
             self.flush()
         elif tok.tag == "/p":
@@ -121,10 +152,14 @@ class Layout:
             ):
                 run_text = "".join(group)
                 if is_lower:
-                    run_font = get_font(self.size - 2, "bold", self.style)
+                    run_font = get_font(
+                        self.size - 2, "bold", self.style, self.font_family
+                    )
                     runs.append((run_text.upper(), run_font))
                 else:
-                    run_font = get_font(self.size, self.weight, self.style)
+                    run_font = get_font(
+                        self.size, self.weight, self.style, self.font_family
+                    )
                     runs.append((run_text, run_font))
 
             w = sum(run_font.measure(run_text) for run_text, run_font in runs)
@@ -139,14 +174,15 @@ class Layout:
                     (self.cursor_x, run_text, run_font, self.is_superscript)
                 )
                 self.cursor_x += run_font.measure(run_text)
-            normal_font = get_font(self.size, self.weight, self.style)
-            self.cursor_x += normal_font.measure(" ")
+            if not self.in_pre:
+                normal_font = get_font(self.size, self.weight, self.style, self.font_family)
+                self.cursor_x += normal_font.measure(" ")
             return
 
-        font = get_font(self.size, self.weight, self.style)
+        font = get_font(self.size, self.weight, self.style, self.font_family)
         w = font.measure(clean_word)
 
-        if self.cursor_x + w > WIDTH - HSTEP:
+        if self.cursor_x + w > WIDTH - HSTEP and not self.in_pre:
             if SHY in word:
                 split_indices = [i for i, c in enumerate(word) if c == SHY]
                 for index in reversed(split_indices):
@@ -168,10 +204,16 @@ class Layout:
                 return
 
         self.line.append((self.cursor_x, clean_word, font, self.is_superscript))
-        self.cursor_x += w + font.measure(" ")
+        if self.in_pre:
+            self.cursor_x += w
+        else:
+            self.cursor_x += w + font.measure(" ")
 
     def flush(self):
         if not self.line:
+            if hasattr(self, "in_pre") and self.in_pre:
+                font = get_font(self.size, self.weight, self.style, self.font_family)
+                self.cursor_y += font.metrics("linespace") * 1.25
             return
         last_x, last_word, last_font, _ = self.line[-1]
         right_edge = last_x + last_font.measure(last_word)
