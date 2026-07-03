@@ -82,6 +82,20 @@ class HTMLParser:
                 open_tags == ["html", "head"] and tag not in ["/head"] + self.HEAD_TAGS
             ):
                 self.add_tag("/head")
+            elif tag == "p" and "p" in open_tags:
+                self.add_tag("/p")
+            elif tag == "li" and "li" in open_tags:
+                has_list_parent = False
+                for t in reversed(open_tags):
+                    if t in ["ul", "ol"]:
+                        has_list_parent = True
+                        break
+                    if t == "li":
+                        break
+                if not has_list_parent:
+                    self.add_tag("/li")
+                else:
+                    break
             else:
                 break
 
