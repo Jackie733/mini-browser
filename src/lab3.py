@@ -1,3 +1,4 @@
+import itertools
 import tkinter
 import tkinter.font
 
@@ -59,6 +60,7 @@ class Layout:
         self.size = 12
         self.is_centered = False
         self.is_superscript = False
+        self.in_abbr = False
 
         self.line = []
         for tok in tokens:
@@ -98,6 +100,10 @@ class Layout:
         elif tok.tag == "/sup":
             self.is_superscript = False
             self.size += 6
+        elif tok.tag == "abbr":
+            self.in_abbr = True
+        elif tok.tag == "/abbr":
+            self.in_abbr = False
         elif tok.tag == "br":
             self.flush()
         elif tok.tag == "/p":
@@ -105,9 +111,39 @@ class Layout:
             self.cursor_y += VSTEP
 
     def word(self, word):
-        font = get_font(self.size, self.weight, self.style)
         SHY = "\u00ad"
         clean_word = word.replace(SHY, "")
+
+        if self.in_abbr:
+            runs = []
+            for is_lower, group in itertools.groupby(
+                clean_word, key=lambda c: c.islower()
+            ):
+                run_text = "".join(group)
+                if is_lower:
+                    run_font = get_font(self.size - 2, "bold", self.style)
+                    runs.append((run_text.upper(), run_font))
+                else:
+                    run_font = get_font(self.size, self.weight, self.style)
+                    runs.append((run_text, run_font))
+
+            w = sum(run_font.measure(run_text) for run_text, run_font in runs)
+            if self.cursor_x + w > WIDTH - HSTEP:
+                if self.cursor_x > HSTEP:
+                    self.flush()
+                    self.word(word)
+                    return
+
+            for run_text, run_font in runs:
+                self.line.append(
+                    (self.cursor_x, run_text, run_font, self.is_superscript)
+                )
+                self.cursor_x += run_font.measure(run_text)
+            normal_font = get_font(self.size, self.weight, self.style)
+            self.cursor_x += normal_font.measure(" ")
+            return
+
+        font = get_font(self.size, self.weight, self.style)
         w = font.measure(clean_word)
 
         if self.cursor_x + w > WIDTH - HSTEP:
