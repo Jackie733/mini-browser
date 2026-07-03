@@ -109,7 +109,7 @@ class Layout:
         SHY = "\u00ad"
         clean_word = word.replace(SHY, "")
         w = font.measure(clean_word)
-        
+
         if self.cursor_x + w > WIDTH - HSTEP:
             if SHY in word:
                 split_indices = [i for i, c in enumerate(word) if c == SHY]
@@ -119,11 +119,13 @@ class Layout:
                     part1 = part1_raw.replace(SHY, "") + "-"
                     w_part1 = font.measure(part1)
                     if self.cursor_x + w_part1 <= WIDTH - HSTEP:
-                        self.line.append((self.cursor_x, part1, font, self.is_superscript))
+                        self.line.append(
+                            (self.cursor_x, part1, font, self.is_superscript)
+                        )
                         self.flush()
                         self.word(part2_raw)
                         return
-            
+
             if self.cursor_x > HSTEP:
                 self.flush()
                 self.word(word)
