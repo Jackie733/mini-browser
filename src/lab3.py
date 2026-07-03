@@ -106,10 +106,30 @@ class Layout:
 
     def word(self, word):
         font = get_font(self.size, self.weight, self.style)
-        w = font.measure(word)
+        SHY = "\u00ad"
+        clean_word = word.replace(SHY, "")
+        w = font.measure(clean_word)
+        
         if self.cursor_x + w > WIDTH - HSTEP:
-            self.flush()
-        self.line.append((self.cursor_x, word, font, self.is_superscript))
+            if SHY in word:
+                split_indices = [i for i, c in enumerate(word) if c == SHY]
+                for index in reversed(split_indices):
+                    part1_raw = word[:index]
+                    part2_raw = word[index + 1 :]
+                    part1 = part1_raw.replace(SHY, "") + "-"
+                    w_part1 = font.measure(part1)
+                    if self.cursor_x + w_part1 <= WIDTH - HSTEP:
+                        self.line.append((self.cursor_x, part1, font, self.is_superscript))
+                        self.flush()
+                        self.word(part2_raw)
+                        return
+            
+            if self.cursor_x > HSTEP:
+                self.flush()
+                self.word(word)
+                return
+
+        self.line.append((self.cursor_x, clean_word, font, self.is_superscript))
         self.cursor_x += w + font.measure(" ")
 
     def flush(self):
