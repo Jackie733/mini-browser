@@ -58,6 +58,7 @@ class Layout:
         self.style = "roman"
         self.size = 12
         self.is_centered = False
+        self.is_superscript = False
 
         self.line = []
         for tok in tokens:
@@ -91,6 +92,12 @@ class Layout:
         elif tok.tag == "/h1":
             self.flush()
             self.is_centered = False
+        elif tok.tag == "sup":
+            self.is_superscript = True
+            self.size -= 6
+        elif tok.tag == "/sup":
+            self.is_superscript = False
+            self.size += 6
         elif tok.tag == "br":
             self.flush()
         elif tok.tag == "/p":
@@ -102,21 +109,24 @@ class Layout:
         w = font.measure(word)
         if self.cursor_x + w > WIDTH - HSTEP:
             self.flush()
-        self.line.append((self.cursor_x, word, font))
+        self.line.append((self.cursor_x, word, font, self.is_superscript))
         self.cursor_x += w + font.measure(" ")
 
     def flush(self):
         if not self.line:
             return
-        last_x, last_word, last_font = self.line[-1]
+        last_x, last_word, last_font, _ = self.line[-1]
         right_edge = last_x + last_font.measure(last_word)
         remaining_space = (WIDTH - HSTEP) - right_edge
         offset = remaining_space / 2
-        metrics = [font.metrics() for x, word, font in self.line]
+        metrics = [font.metrics() for x, word, font, is_sup in self.line]
         max_ascent = max([metric["ascent"] for metric in metrics])
         baseline = self.cursor_y + 1.25 * max_ascent
-        for x, word, font in self.line:
-            y = baseline - font.metrics("ascent")
+        for x, word, font, is_sup in self.line:
+            if is_sup:
+                y = baseline - max_ascent
+            else:
+                y = baseline - font.metrics("ascent")
             if self.is_centered:
                 self.display_list.append((x + offset, y, word, font))
             else:
