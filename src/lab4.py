@@ -157,7 +157,26 @@ class HTMLParser:
         in_tag = False
         i = 0
         while i < len(self.body):
-            if not in_tag and self.body[i:i+4] == "<!--":
+            is_in_script = (
+                len(self.unfinished) > 0 and self.unfinished[-1].tag == "script"
+            )
+            if is_in_script:
+                if self.body[i : i + 8].casefold() == "</script":
+                    next_c = self.body[i + 8] if i + 8 < len(self.body) else ""
+                    if next_c in [" ", "\t", "\v", "\r", "\n", "/", ">"]:
+                        if text:
+                            self.add_text(text)
+                            text = ""
+                        end_idx = self.body.find(">", i + 8)
+                        if end_idx != -1:
+                            tag_text = self.body[i + 1 : end_idx]
+                            self.add_tag(tag_text)
+                            i = end_idx + 1
+                        else:
+                            i = len(self.body)
+                        continue
+
+            if not in_tag and self.body[i : i + 4] == "<!--":
                 if text:
                     self.add_text(text)
                     text = ""
