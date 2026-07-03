@@ -91,7 +91,7 @@ class Layout:
             self.cursor_y += VSTEP
 
     def word(self, word):
-        font = get_font(self.size, self.weight, self.size)
+        font = get_font(self.size, self.weight, self.style)
         w = font.measure(word)
         if self.cursor_x + w > WIDTH - HSTEP:
             self.flush()
