@@ -107,6 +107,19 @@ class BlockLayout:
         mode = self.layout_mode()
         if mode == "block":
             previous = None
+
+            children_to_layout = list(self.node.children)
+
+            if (
+                isinstance(self.node, Element)
+                and self.node.tag == "nav"
+                and self.node.attributes.get("id") == "toc"
+            ):
+                toc_title_el = Element("div", {"class": "toc-title"}, self.node)
+                toc_text = Text("Table of Contents", toc_title_el)
+                toc_title_el.children.append(toc_text)
+                children_to_layout.insert(0, toc_title_el)
+
             for child in self.node.children:
                 if isinstance(child, Element) and child.tag == "head":
                     continue
@@ -180,6 +193,15 @@ class BlockLayout:
             x2 = x1 + bullet_size
             y2 = y1 + bullet_size
             cmds.append(DrawRect(x1, y1, x2, y2, "black"))
+
+        if (
+            isinstance(self.node, Element)
+            and self.node.tag == "div"
+            and self.node.attributes.get("class") == "toc-title"
+        ):
+            x2, y2 = self.x + self.width, self.y + self.height
+            rect = DrawRect(self.x, self.y, x2, y2, "gray")
+            cmds.append(rect)
 
         if self.layout_mode() == "inline":
             for x, y, word, font in self.display_list:
