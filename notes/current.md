@@ -1,9 +1,8 @@
 # Current Status
 
-## Chapter: 4 - Constructing a Document Tree
+## Chapter: 5 - The Layout Tree
 
-## Last exercise: 4-3 Scripts (done)
+## Last exercise: None (Chapter 5 baseline implemented)
 
-## Next to do: 4-4 Quoted attributes
+## Next to do: 5-1 Links Bar
 
-Skipping Ch4 exercises for now. Next session: continue at 4-4.
