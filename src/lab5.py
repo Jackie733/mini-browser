@@ -76,7 +76,9 @@ class BlockLayout:
             previous = next
 
     def layout_mode(self):
-        if isinstance(self.node, Text):
+        if isinstance(self.node, list):
+            return "inline"
+        elif isinstance(self.node, Text):
             return "inline"
         elif any(
             [
@@ -107,6 +109,16 @@ class BlockLayout:
         mode = self.layout_mode()
         if mode == "block":
             previous = None
+            group = []
+
+            def flush_group():
+                nonlocal previous
+                if not group:
+                    return
+                next_node = BlockLayout(list(group), self, previous)
+                self.children.append(next_node)
+                previous = next_node
+                group.clear()
 
             children_to_layout = list(self.node.children)
 
@@ -120,12 +132,20 @@ class BlockLayout:
                 toc_title_el.children.append(toc_text)
                 children_to_layout.insert(0, toc_title_el)
 
-            for child in self.node.children:
+            for child in children_to_layout:
                 if isinstance(child, Element) and child.tag == "head":
                     continue
-                next = BlockLayout(child, self, previous)
-                self.children.append(next)
-                previous = next
+
+                is_block = isinstance(child, Element) and child.tag in BLOCK_ELEMENTS
+                if is_block:
+                    flush_group()
+                    next_node = BlockLayout(child, self, previous)
+                    self.children.append(next_node)
+                    previous = next_node
+                else:
+                    group.append(child)
+
+            flush_group()
         else:
             self.cursor_x = 0
             self.cursor_y = 0
@@ -133,7 +153,13 @@ class BlockLayout:
             self.style = "roman"
             self.size = 12
             self.line = []
-            self.recurse(self.node)
+
+            if isinstance(self.node, list):
+                for child in self.node:
+                    self.recurse(child)
+            else:
+                self.recurse(self.node)
+
             self.flush()
 
         for child in self.children:
