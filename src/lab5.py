@@ -104,6 +104,8 @@ class BlockLayout:
         if mode == "block":
             previous = None
             for child in self.node.children:
+                if isinstance(child, Element) and child.tag == "head":
+                    continue
                 next = BlockLayout(child, self, previous)
                 self.children.append(next)
                 previous = next
@@ -156,7 +158,11 @@ class BlockLayout:
             rect = DrawRect(self.x, self.y, x2, y2, "gray")
             cmds.append(rect)
 
-        if isinstance(self.node, Element) and self.node.tag == "nav" and "links" in self.node.attributes.get("class", "").split():
+        if (
+            isinstance(self.node, Element)
+            and self.node.tag == "nav"
+            and "links" in self.node.attributes.get("class", "").split()
+        ):
             x2, y2 = self.x + self.width, self.y + self.height
             rect = DrawRect(self.x, self.y, x2, y2, "lightgray")
             cmds.append(rect)
