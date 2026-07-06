@@ -136,6 +136,36 @@ class BlockLayout:
                 if isinstance(child, Element) and child.tag == "head":
                     continue
 
+                if isinstance(child, Element) and child.tag == "h6":
+                    next_sibling = None
+                    curr_idx = children_to_layout.index(child)
+                    for s in children_to_layout[curr_idx + 1 :]:
+                        if isinstance(s, Element) and s.tag == "head":
+                            continue
+                        next_sibling = s
+                        break
+
+                    if next_sibling:
+                        parent_node = next_sibling if next_sibling else self.node
+                        bold_el = Element("b", {}, parent_node)
+                        bold_el.children = child.children
+                        for c in bold_el.children:
+                            c.parent = bold_el
+
+                        is_next_block = (
+                            isinstance(next_sibling, Element)
+                            and next_sibling.tag in BLOCK_ELEMENTS
+                        )
+                        if is_next_block:
+                            next_sibling.children = [
+                                bold_el,
+                                Text(" ", next_sibling),
+                            ] + next_sibling.children
+                        else:
+                            group.append(bold_el)
+                            group.append(Text(" ", self.node))
+                        continue
+
                 is_block = isinstance(child, Element) and child.tag in BLOCK_ELEMENTS
                 if is_block:
                     flush_group()
