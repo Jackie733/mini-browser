@@ -94,6 +94,10 @@ class BlockLayout:
         self.x = self.parent.x
         self.width = self.parent.width
 
+        if isinstance(self.node, Element) and self.node.tag == "li":
+            self.x += 2 * HSTEP
+            self.width -= 2 * HSTEP
+
         # layout object's vertical position
         if self.previous:
             self.y = self.previous.y + self.previous.height
@@ -166,6 +170,16 @@ class BlockLayout:
             x2, y2 = self.x + self.width, self.y + self.height
             rect = DrawRect(self.x, self.y, x2, y2, "lightgray")
             cmds.append(rect)
+
+        if isinstance(self.node, Element) and self.node.tag == "li":
+            font = get_font(self.size, self.weight, self.style)
+            ascent = font.metrics("ascent")
+            bullet_size = 6
+            x1 = self.x - 2 * HSTEP + 5
+            y1 = self.y + 0.75 * ascent - (bullet_size / 2)
+            x2 = x1 + bullet_size
+            y2 = y1 + bullet_size
+            cmds.append(DrawRect(x1, y1, x2, y2, "black"))
 
         if self.layout_mode() == "inline":
             for x, y, word, font in self.display_list:
