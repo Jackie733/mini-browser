@@ -2,7 +2,7 @@
 
 ## Chapter: 7 - Handling Buttons and Links
 
-## Current concept: Browser chrome and navigation history
+## Current concept: Editable address bar navigation
 
 ## Implemented
 
@@ -14,10 +14,10 @@
 - Added browser chrome with a tab bar, new-tab button, URL bar, and back button.
 - Added per-tab history and back navigation.
 - Added URL string rendering for the address bar.
+- Added address bar focus, keyboard input, cursor drawing, and Enter-to-navigate.
 
 ## Next to do
 
-- Add editable address bar input.
 - Implement fragment links later if desired.
 
 ## Known Issues
