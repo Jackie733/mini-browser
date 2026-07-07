@@ -2,7 +2,7 @@
 
 ## Chapter: 7 - Handling Buttons and Links
 
-## Current concept: Click handling for links
+## Current concept: Browser chrome and navigation history
 
 ## Implemented
 
@@ -10,9 +10,14 @@
 - Bound left mouse clicks to the browser click handler.
 - Hit-test click coordinates against the layout tree.
 - Resolve and load links from clicked `<a href>` elements.
+- Split page state into `Tab` and window/chrome state into `Browser`.
+- Added browser chrome with a tab bar, new-tab button, URL bar, and back button.
+- Added per-tab history and back navigation.
+- Added URL string rendering for the address bar.
 
 ## Next to do
 
+- Add editable address bar input.
 - Implement fragment links later if desired.
 
 ## Known Issues

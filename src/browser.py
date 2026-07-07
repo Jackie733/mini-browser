@@ -36,6 +36,14 @@ class URL:
             print("  URL was: " + url)
             self.__init__("https://browser.engineering")
 
+    def __str__(self):
+        port_part = ":" + str(self.port)
+        if self.scheme == "https" and self.port == 443:
+            port_part = ""
+        if self.scheme == "http" and self.port == 80:
+            port_part = ""
+        return self.scheme + "://" + self.host + port_part + self.path
+
     def request(self):
         s = socket.socket(
             family=socket.AF_INET,
@@ -777,8 +785,10 @@ class Tab:
         self.display_list = []
         self.url = None
         self.tab_height = tab_height
+        self.history = []
 
     def load(self, url):
+        self.history.append(url)
         self.url = url
         body = url.request()
         self.nodes = HTMLParser(body).parse()
@@ -805,6 +815,12 @@ class Tab:
         self.document.layout()
         self.display_list = []
         paint_tree(self.document, self.display_list)
+
+    def go_back(self):
+        if len(self.history) > 1:
+            self.history.pop()
+            back = self.history.pop()
+            self.load(back)
 
     def draw(self, canvas, offset):
         for cmd in self.display_list:
@@ -846,7 +862,6 @@ class Chrome:
         self.padding = 5
         self.tabbar_top = 0
         self.tabbar_bottom = self.font_height + 2 * self.padding
-        self.bottom = self.tabbar_bottom
 
         plus_width = self.font.measure("+") + 2 * self.padding
         self.newtab_rect = Rect(
@@ -856,9 +871,29 @@ class Chrome:
             self.padding + self.font_height,
         )
 
+        self.urlbar_top = self.tabbar_bottom
+        self.urlbar_bottom = self.urlbar_top + self.font_height + 2 * self.padding
+        back_width = self.font.measure("<") + 2 * self.padding
+        self.back_rect = Rect(
+            self.padding,
+            self.urlbar_top + self.padding,
+            self.padding + back_width,
+            self.urlbar_bottom - self.padding,
+        )
+        self.address_rect = Rect(
+            self.back_rect.right + self.padding,
+            self.urlbar_top + self.padding,
+            WIDTH - self.padding,
+            self.urlbar_bottom - self.padding,
+        )
+
+        self.bottom = self.urlbar_bottom
+
     def click(self, x, y):
         if self.newtab_rect.contains_point(x, y):
             self.browser.new_tab(URL("https://browser.engineering/"))
+        elif self.back_rect.contains_point(x, y):
+            self.browser.active_tab.go_back()
         else:
             for i, tab in enumerate(self.browser.tabs):
                 if self.tab_rect(i).contains_point(x, y):
@@ -917,6 +952,29 @@ class Chrome:
                         bounds.right, bounds.bottom, WIDTH, bounds.bottom, "black", 1
                     )
                 )
+
+        cmds.append(DrawOutline(self.back_rect, "black", 1))
+        cmds.append(
+            DrawText(
+                self.back_rect.left + self.padding,
+                self.back_rect.top,
+                "<",
+                self.font,
+                "black",
+            )
+        )
+
+        cmds.append(DrawOutline(self.address_rect, "black", 1))
+        url = str(self.browser.active_tab.url)
+        cmds.append(
+            DrawText(
+                self.address_rect.left + self.padding,
+                self.address_rect.top,
+                url,
+                self.font,
+                "black",
+            )
+        )
 
         return cmds
 
