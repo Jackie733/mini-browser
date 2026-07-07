@@ -1,8 +1,8 @@
 # Current Status
 
-## Chapter: 7 - Handling Buttons and Links
+## Chapter: 8 - Sending Information to Servers
 
-## Current concept: Editable address bar navigation
+## Current concept: Rendering form widgets
 
 ## Implemented
 
@@ -15,9 +15,16 @@
 - Added per-tab history and back navigation.
 - Added URL string rendering for the address bar.
 - Added address bar focus, keyboard input, cursor drawing, and Enter-to-navigate.
+- Renamed the default stylesheet to `browser.css`.
+- Added default styles for `input` and `button`.
+- Added `InputLayout` for rendering text inputs and simple buttons.
+- Added inline layout handling for `input` and `button` elements.
+- Added `should_paint` filtering to avoid double-painting form controls.
 
 ## Next to do
 
+- Add focus and editing for page `<input>` elements.
+- Add form submission.
 - Implement fragment links later if desired.
 
 ## Known Issues
