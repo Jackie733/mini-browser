@@ -29,8 +29,7 @@ When working in this repository:
 4. Do not rewrite large parts of the project unless explicitly asked.
 5. Do not copy official code wholesale.
 6. Prefer simple Python over clever abstractions.
-7. Relate important Python concepts to TypeScript/JavaScript when useful.
-8. Preserve my learning process.
+7. Preserve my learning process.
 
 ---
 
@@ -72,21 +71,6 @@ Do not try to complete the whole pipeline early. Work only on the chapter or con
 ---
 
 ## Python Guidance
-
-Assume I know TypeScript/JavaScript well but am still learning Python.
-
-When explaining Python, prefer comparisons like:
-
-```python
-
-self.scheme, url = url.split("://", 1)
-```
-
-```ts
-const [scheme, rest] = url.split("://");
-this.scheme = scheme;
-url = rest;
-```
 
 Explain Python syntax when it is relevant to understanding the browser implementation.
 

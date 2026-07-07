@@ -1,16 +1,17 @@
+"""
+This file compiles the code in Web Browser Engineering,
+up to and including Chapter 4 (Constructing a Document Tree),
+without exercises.
+"""
+
+import wbetools
+import socket
+import ssl
 import tkinter
-
-import webtools
+import tkinter.font
 from lab1 import URL
-from lab2 import HSTEP, VSTEP
-from lab3 import Browser, Layout
-
-
-def print_tree(node, indent=0):
-    print(" " * indent, node)
-    for child in node.children:
-        print_tree(child, indent + 2)
-
+from lab2 import WIDTH, HEIGHT, HSTEP, VSTEP, SCROLL_STEP
+from lab3 import FONTS, get_font, Layout, Browser
 
 class Text:
     def __init__(self, text, parent):
@@ -21,7 +22,6 @@ class Text:
     def __repr__(self):
         return repr(self.text)
 
-
 class Element:
     def __init__(self, tag, attributes, parent):
         self.tag = tag
@@ -30,17 +30,40 @@ class Element:
         self.parent = parent
 
     def __repr__(self):
-        attrs = [" " + k + '="' + v + '"' for k, v in self.attributes.items()]
+        attrs = [" " + k + "=\"" + v + "\"" for k, v  in self.attributes.items()]
         attr_str = ""
         for attr in attrs:
             attr_str += attr
         return "<" + self.tag + attr_str + ">"
 
+@wbetools.patchable
+def print_tree(node, indent=0):
+    print(" " * indent, node)
+    for child in node.children:
+        print_tree(child, indent + 2)
 
 class HTMLParser:
     def __init__(self, body):
         self.body = body
         self.unfinished = []
+
+    def parse(self):
+        text = ""
+        in_tag = False
+        for c in self.body:
+            if c == "<":
+                in_tag = True
+                if text: self.add_text(text)
+                text = ""
+            elif c == ">":
+                in_tag = False
+                self.add_tag(text)
+                text = ""
+            else:
+                text += c
+        if not in_tag and text:
+            self.add_text(text)
+        return self.finish()
 
     def get_attributes(self, text):
         parts = text.split()
@@ -49,23 +72,47 @@ class HTMLParser:
         for attrpair in parts[1:]:
             if "=" in attrpair:
                 key, value = attrpair.split("=", 1)
-                if len(value) > 2 and value[0] in ["'", '"']:
+                if len(value) > 2 and value[0] in ["'", "\""]:
                     value = value[1:-1]
                 attributes[key.casefold()] = value
             else:
                 attributes[attrpair.casefold()] = ""
         return tag, attributes
 
+    def add_text(self, text):
+        if text.isspace(): return
+        self.implicit_tags(None)
+        parent = self.unfinished[-1]
+        node = Text(text, parent)
+        parent.children.append(node)
+
+    SELF_CLOSING_TAGS = [
+        "area", "base", "br", "col", "embed", "hr", "img", "input",
+        "link", "meta", "param", "source", "track", "wbr",
+    ]
+
+    def add_tag(self, tag):
+        tag, attributes = self.get_attributes(tag)
+        if tag.startswith("!"): return
+        self.implicit_tags(tag)
+
+        if tag.startswith("/"):
+            if len(self.unfinished) == 1: return
+            node = self.unfinished.pop()
+            parent = self.unfinished[-1]
+            parent.children.append(node)
+        elif tag in self.SELF_CLOSING_TAGS:
+            parent = self.unfinished[-1]
+            node = Element(tag, attributes, parent)
+            parent.children.append(node)
+        else:
+            parent = self.unfinished[-1] if self.unfinished else None
+            node = Element(tag, attributes, parent)
+            self.unfinished.append(node)
+
     HEAD_TAGS = [
-        "base",
-        "basefont",
-        "bgsound",
-        "noscript",
-        "link",
-        "meta",
-        "title",
-        "style",
-        "script",
+        "base", "basefont", "bgsound", "noscript",
+        "link", "meta", "title", "style", "script",
     ]
 
     def implicit_tags(self, tag):
@@ -73,75 +120,17 @@ class HTMLParser:
             open_tags = [node.tag for node in self.unfinished]
             if open_tags == [] and tag != "html":
                 self.add_tag("html")
-            elif open_tags == ["html"] and tag not in ["head", "body", "/html"]:
+            elif open_tags == ["html"] \
+                 and tag not in ["head", "body", "/html"]:
                 if tag in self.HEAD_TAGS:
                     self.add_tag("head")
                 else:
                     self.add_tag("body")
-            elif (
-                open_tags == ["html", "head"] and tag not in ["/head"] + self.HEAD_TAGS
-            ):
+            elif open_tags == ["html", "head"] and \
+                 tag not in ["/head"] + self.HEAD_TAGS:
                 self.add_tag("/head")
-            elif tag == "p" and "p" in open_tags:
-                self.add_tag("/p")
-            elif tag == "li" and "li" in open_tags:
-                has_list_parent = False
-                for t in reversed(open_tags):
-                    if t in ["ul", "ol"]:
-                        has_list_parent = True
-                        break
-                    if t == "li":
-                        break
-                if not has_list_parent:
-                    self.add_tag("/li")
-                else:
-                    break
             else:
                 break
-
-    def add_text(self, text):
-        if text.isspace():
-            return
-        self.implicit_tags(None)
-        parent = self.unfinished[-1]
-        node = Text(text, parent)
-        parent.children.append(node)
-
-    SELF_CLOSING_TAGS = [
-        "area",
-        "base",
-        "br",
-        "embed",
-        "hr",
-        "img",
-        "input",
-        "link",
-        "meta",
-        "param",
-        "source",
-        "track",
-        "wbr",
-    ]
-
-    def add_tag(self, tag):
-        tag, attrbutes = self.get_attributes(tag)
-        if tag.startswith("!"):
-            return
-        self.implicit_tags(tag)
-        if tag.startswith("/"):
-            if len(self.unfinished) == 1:
-                return
-            node = self.unfinished.pop()
-            parent = self.unfinished[-1]
-            parent.children.append(node)
-        elif tag in self.SELF_CLOSING_TAGS:
-            parent = self.unfinished[-1]
-            node = Element(tag, attrbutes, parent)
-            parent.children.append(node)
-        else:
-            parent = self.unfinished[-1] if self.unfinished else None
-            node = Element(tag, attrbutes, parent)
-            self.unfinished.append(node)
 
     def finish(self):
         if not self.unfinished:
@@ -152,61 +141,7 @@ class HTMLParser:
             parent.children.append(node)
         return self.unfinished.pop()
 
-    def parse(self):
-        text = ""
-        in_tag = False
-        i = 0
-        while i < len(self.body):
-            is_in_script = (
-                len(self.unfinished) > 0 and self.unfinished[-1].tag == "script"
-            )
-            if is_in_script:
-                if self.body[i : i + 8].casefold() == "</script":
-                    next_c = self.body[i + 8] if i + 8 < len(self.body) else ""
-                    if next_c in [" ", "\t", "\v", "\r", "\n", "/", ">"]:
-                        if text:
-                            self.add_text(text)
-                            text = ""
-                        end_idx = self.body.find(">", i + 8)
-                        if end_idx != -1:
-                            tag_text = self.body[i + 1 : end_idx]
-                            self.add_tag(tag_text)
-                            i = end_idx + 1
-                        else:
-                            i = len(self.body)
-                        continue
-
-            if not in_tag and self.body[i : i + 4] == "<!--":
-                if text:
-                    self.add_text(text)
-                    text = ""
-                end_idx = self.body.find("-->", i + 2)
-                if end_idx != -1:
-                    i = end_idx + 3
-                else:
-                    i = len(self.body)
-                continue
-
-            c = self.body[i]
-            if c == "<":
-                in_tag = True
-                if text:
-                    self.add_text(text)
-                text = ""
-            elif c == ">":
-                in_tag = False
-                self.add_tag(text)
-                text = ""
-            else:
-                text += c
-            i += 1
-
-        if not in_tag and text:
-            self.add_text(text)
-        return self.finish()
-
-
-@webtools.patch(Layout)
+@wbetools.patch(Layout)
 class Layout:
     def __init__(self, tree):
         self.display_list = []
@@ -217,15 +152,12 @@ class Layout:
         self.style = "roman"
         self.size = 12
 
-        self.is_centered = False
-        self.is_superscript = False
-        self.in_abbr = False
-        self.in_pre = False
-        self.font_family = None
-
         self.line = []
         self.recurse(tree)
         self.flush()
+
+    @wbetools.delete
+    def token(self, tok): pass
 
     def recurse(self, tree):
         if isinstance(tree, Text):
@@ -258,13 +190,11 @@ class Layout:
             self.size += 2
         elif tag == "big":
             self.size -= 4
-
         elif tag == "p":
             self.flush()
             self.cursor_y += VSTEP
 
-
-@webtools.patch(Browser)
+@wbetools.patch(Browser)
 class Browser:
     def load(self, url):
         body = url.request()
@@ -272,9 +202,7 @@ class Browser:
         self.display_list = Layout(self.nodes).display_list
         self.draw()
 
-
 if __name__ == "__main__":
     import sys
-
     Browser().load(URL(sys.argv[1]))
     tkinter.mainloop()
