@@ -1,9 +1,21 @@
 # Current Status
 
-## Chapter: 5 - The Layout Tree
+## Chapter: 7 - Handling Buttons and Links
 
-## Last exercise: 5-1 Links Bar (done)
+## Current concept: Click handling for links
 
-## Next to do: 5-2 Hidden Head
+## Implemented
 
+- Split inline text into `LineLayout` and `TextLayout` objects.
+- Bound left mouse clicks to the browser click handler.
+- Hit-test click coordinates against the layout tree.
+- Resolve and load links from clicked `<a href>` elements.
 
+## Next to do
+
+- Implement fragment links later if desired.
+
+## Known Issues
+
+- Links like `#click-handling` do not scroll within the current page yet.
+  This is listed as a later Chapter 7 exercise.
