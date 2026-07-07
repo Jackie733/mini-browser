@@ -4,11 +4,11 @@ up to and including Chapter 2 (Drawing to the Screen),
 without exercises.
 """
 
-import wbetools
-import socket
-import ssl
 import tkinter
+
+import wbetools
 from lab1 import URL
+
 
 def lex(body):
     text = ""
@@ -23,10 +23,12 @@ def lex(body):
         wbetools.record("lex", text)
     return text
 
+
 WIDTH, HEIGHT = 800, 600
 HSTEP, VSTEP = 13, 18
 
 SCROLL_STEP = 100
+
 
 def layout(text):
     display_list = []
@@ -40,14 +42,11 @@ def layout(text):
         wbetools.record("layout", display_list)
     return display_list
 
+
 class Browser:
     def __init__(self):
         self.window = tkinter.Tk()
-        self.canvas = tkinter.Canvas(
-            self.window,
-            width=WIDTH,
-            height=HEIGHT
-        )
+        self.canvas = tkinter.Canvas(self.window, width=WIDTH, height=HEIGHT)
 
         self.canvas.pack()
 
@@ -64,13 +63,16 @@ class Browser:
         self.canvas.delete("all")
         for x, y, c in self.display_list:
             wbetools.record("draw")
-            if y > self.scroll + HEIGHT: continue
-            if y + VSTEP < self.scroll: continue
+            if y > self.scroll + HEIGHT:
+                continue
+            if y + VSTEP < self.scroll:
+                continue
             self.canvas.create_text(x, y - self.scroll, text=c)
 
     def scrolldown(self, e):
         self.scroll += SCROLL_STEP
         self.draw()
+
 
 if __name__ == "__main__":
     import sys

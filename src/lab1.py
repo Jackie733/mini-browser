@@ -6,7 +6,9 @@ without exercises.
 
 import socket
 import ssl
+
 import wbetools
+
 
 class URL:
     def __init__(self, url):
@@ -39,7 +41,7 @@ class URL:
             proto=socket.IPPROTO_TCP,
         )
         s.connect((self.host, self.port))
-    
+
         if self.scheme == "https":
             ctx = ssl.create_default_context()
             s = ctx.wrap_socket(s, server_hostname=self.host)
@@ -50,29 +52,32 @@ class URL:
 
         s.send(request.encode("utf8"))
         response = s.makefile("r", encoding="utf8", newline="\r\n")
-    
+
         statusline = response.readline()
         version, status, explanation = statusline.split(" ", 2)
-    
+
         response_headers = {}
         while True:
             line = response.readline()
-            if line == "\r\n": break
+            if line == "\r\n":
+                break
             header, value = line.split(":", 1)
             response_headers[header.casefold()] = value.strip()
-    
+
         assert "transfer-encoding" not in response_headers
         assert "content-encoding" not in response_headers
-    
+
         content = response.read()
         s.close()
-    
+
         return content
 
     @wbetools.js_hide
     def __repr__(self):
         return "URL(scheme={}, host={}, port={}, path={!r})".format(
-            self.scheme, self.host, self.port, self.path)
+            self.scheme, self.host, self.port, self.path
+        )
+
 
 def show(body):
     in_tag = False
@@ -84,10 +89,13 @@ def show(body):
         elif not in_tag:
             print(c, end="")
 
+
 def load(url):
     body = url.request()
     show(body)
 
+
 if __name__ == "__main__":
     import sys
+
     load(URL(sys.argv[1]))

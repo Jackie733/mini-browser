@@ -4,24 +4,55 @@ up to and including Chapter 5 (Laying out Pages),
 without exercises.
 """
 
-import wbetools
-import socket
-import ssl
 import tkinter
 import tkinter.font
+
+import wbetools
 from lab1 import URL
-from lab2 import WIDTH, HEIGHT, HSTEP, VSTEP, SCROLL_STEP
-from lab3 import FONTS, get_font
-from lab4 import Text, Element, print_tree, HTMLParser, Layout, Browser
+from lab2 import HEIGHT, HSTEP, SCROLL_STEP, VSTEP, WIDTH
+from lab3 import get_font
+from lab4 import Browser, Element, HTMLParser, Layout, Text
 
 BLOCK_ELEMENTS = [
-    "html", "body", "article", "section", "nav", "aside",
-    "h1", "h2", "h3", "h4", "h5", "h6", "hgroup", "header",
-    "footer", "address", "p", "hr", "pre", "blockquote",
-    "ol", "ul", "menu", "li", "dl", "dt", "dd", "figure",
-    "figcaption", "main", "div", "table", "form", "fieldset",
-    "legend", "details", "summary"
+    "html",
+    "body",
+    "article",
+    "section",
+    "nav",
+    "aside",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "hgroup",
+    "header",
+    "footer",
+    "address",
+    "p",
+    "hr",
+    "pre",
+    "blockquote",
+    "ol",
+    "ul",
+    "menu",
+    "li",
+    "dl",
+    "dt",
+    "dd",
+    "figure",
+    "figcaption",
+    "main",
+    "div",
+    "table",
+    "form",
+    "fieldset",
+    "legend",
+    "details",
+    "summary",
 ]
+
 
 @wbetools.patch(Layout)
 class BlockLayout:
@@ -69,8 +100,7 @@ class BlockLayout:
             child.layout()
 
         if mode == "block":
-            self.height = sum([
-                child.height for child in self.children])
+            self.height = sum([child.height for child in self.children])
         else:
             self.height = self.cursor_y
 
@@ -79,9 +109,12 @@ class BlockLayout:
     def layout_mode(self):
         if isinstance(self.node, Text):
             return "inline"
-        elif any([isinstance(child, Element) and \
-                  child.tag in BLOCK_ELEMENTS
-                  for child in self.node.children]):
+        elif any(
+            [
+                isinstance(child, Element) and child.tag in BLOCK_ELEMENTS
+                for child in self.node.children
+            ]
+        ):
             return "block"
         elif self.node.children:
             return "inline"
@@ -97,7 +130,8 @@ class BlockLayout:
         self.cursor_x += w + font.measure(" ")
 
     def flush(self):
-        if not self.line: return
+        if not self.line:
+            return
         metrics = [font.metrics() for x, word, font in self.line]
         max_ascent = max([metric["ascent"] for metric in metrics])
         baseline = self.cursor_y + 1.25 * max_ascent
@@ -125,7 +159,9 @@ class BlockLayout:
     @wbetools.js_hide
     def __repr__(self):
         return "BlockLayout[{}](x={}, y={}, width={}, height={}, node={})".format(
-            self.layout_mode(), self.x, self.y, self.width, self.height, self.node)
+            self.layout_mode(), self.x, self.y, self.width, self.height, self.node
+        )
+
 
 class DocumentLayout:
     def __init__(self, node):
@@ -139,7 +175,7 @@ class DocumentLayout:
         child = BlockLayout(self.node, self, None)
         self.children.append(child)
 
-        self.width = WIDTH - 2*HSTEP
+        self.width = WIDTH - 2 * HSTEP
         self.x = HSTEP
         self.y = VSTEP
         child.layout()
@@ -153,6 +189,7 @@ class DocumentLayout:
     def __repr__(self):
         return "DocumentLayout()"
 
+
 class DrawText:
     def __init__(self, x1, y1, text, font):
         self.top = y1
@@ -164,15 +201,15 @@ class DrawText:
 
     def execute(self, scroll, canvas):
         canvas.create_text(
-            self.left, self.top - scroll,
-            text=self.text,
-            font=self.font,
-            anchor='nw')
+            self.left, self.top - scroll, text=self.text, font=self.font, anchor="nw"
+        )
 
     @wbetools.js_hide
     def __repr__(self):
         return "DrawText(top={} left={} bottom={} text={} font={})".format(
-            self.top, self.left, self.bottom, self.text, self.font)
+            self.top, self.left, self.bottom, self.text, self.font
+        )
+
 
 class DrawRect:
     def __init__(self, x1, y1, x2, y2, color):
@@ -184,21 +221,27 @@ class DrawRect:
 
     def execute(self, scroll, canvas):
         canvas.create_rectangle(
-            self.left, self.top - scroll,
-            self.right, self.bottom - scroll,
+            self.left,
+            self.top - scroll,
+            self.right,
+            self.bottom - scroll,
             width=0,
-            fill=self.color)
+            fill=self.color,
+        )
 
     @wbetools.js_hide
     def __repr__(self):
         return "DrawRect(top={} left={} bottom={} right={} color={})".format(
-            self.top, self.left, self.bottom, self.right, self.color)
+            self.top, self.left, self.bottom, self.right, self.color
+        )
+
 
 def paint_tree(layout_object, display_list):
     display_list.extend(layout_object.paint())
 
     for child in layout_object.children:
         paint_tree(child, display_list)
+
 
 @wbetools.patch(Browser)
 class Browser:
@@ -214,16 +257,20 @@ class Browser:
     def draw(self):
         self.canvas.delete("all")
         for cmd in self.display_list:
-            if cmd.top > self.scroll + HEIGHT: continue
-            if cmd.bottom < self.scroll: continue
+            if cmd.top > self.scroll + HEIGHT:
+                continue
+            if cmd.bottom < self.scroll:
+                continue
             cmd.execute(self.scroll, self.canvas)
 
     def scrolldown(self, e):
-        max_y = max(self.document.height + 2*VSTEP - HEIGHT, 0)
+        max_y = max(self.document.height + 2 * VSTEP - HEIGHT, 0)
         self.scroll = min(self.scroll + SCROLL_STEP, max_y)
         self.draw()
 
+
 if __name__ == "__main__":
     import sys
+
     Browser().load(URL(sys.argv[1]))
     tkinter.mainloop()
