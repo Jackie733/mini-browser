@@ -1,10 +1,23 @@
 # Current Status
 
-## Chapter: 8 - Sending Information to Servers
+## Chapter: 9 - Running Interactive Scripts
 
-## Current concept: Receiving POST requests
+## Current concept: Wrapping handles
 
 ## Implemented
+
+- Installed and imported `dukpy` for executing JavaScript.
+- Added `src/runtime.js` as a small JavaScript runtime loaded before page scripts.
+- Added `JSContext` to keep a per-tab JavaScript interpreter.
+- Exported Python functions into JavaScript with `dukpy.export_function`.
+- Added `console.log` support through the JavaScript runtime.
+- Load external `<script src="...">` files during page load.
+- Added `document.querySelectorAll` as the first DOM API exposed to JavaScript.
+- Map Python DOM nodes to integer handles so JavaScript can refer to them.
+- Wrap handles in JavaScript `Node` objects.
+- Added `Node.getAttribute` by passing handles back from JavaScript to Python.
+
+## Previous chapter recap
 
 - Split inline text into `LineLayout` and `TextLayout` objects.
 - Bound left mouse clicks to the browser click handler.
@@ -35,8 +48,9 @@
 
 ## Next to do
 
-- Run the toy browser against `http://localhost:8000/`.
-- Implement fragment links later if desired.
+- Continue Chapter 9 from event listeners and DOM mutation.
+- Re-render after JavaScript changes the page.
+- Keep local HTML testing behind `python3 -m http.server`.
 
 ## Known Issues
 

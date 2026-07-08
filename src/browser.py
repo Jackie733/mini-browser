@@ -6,6 +6,8 @@ import tkinter
 import tkinter.font
 import urllib.parse
 
+import dukpy
+
 # Global Constants
 WIDTH, HEIGHT = 800, 600
 HSTEP, VSTEP = 13, 18
@@ -107,6 +109,48 @@ class URL:
         return "URL(scheme={}, host={}, port={}, path={!r})".format(
             self.scheme, self.host, self.port, self.path
         )
+
+
+RUNTIME_JS = open(os.path.join(os.path.dirname(__file__), "runtime.js")).read()
+
+
+class JSContext:
+    def __init__(self, tab):
+        self.tab = tab
+        self.interp = dukpy.JSInterpreter()
+        self.interp.export_function("log", print)
+        self.interp.export_function("querySelectorAll", self.querySelectorAll)
+        self.interp.export_function("getAttribute", self.getAttribute)
+        self.interp.evaljs(RUNTIME_JS)
+        self.node_to_handle = {}
+        self.handle_to_node = {}
+
+    def querySelectorAll(self, selector_text):
+        selector = CSSParser(selector_text).selector()
+        nodes = [
+            node for node in tree_to_list(self.tab.nodes, []) if selector.matches(node)
+        ]
+        return [self.get_handle(node) for node in nodes]
+
+    def get_handle(self, elt):
+        if elt not in self.node_to_handle:
+            handle = len(self.node_to_handle)
+            self.node_to_handle[elt] = handle
+            self.handle_to_node[handle] = elt
+        else:
+            handle = self.node_to_handle[elt]
+        return handle
+
+    def getAttribute(self, handle, attr):
+        elt = self.handle_to_node[handle]
+        attr = elt.attributes.get(attr, None)
+        return attr if attr else ""
+
+    def run(self, script, code):
+        try:
+            return self.interp.evaljs(code)
+        except dukpy.JSRuntimeError as e:
+            print("Script", script, "crashed", e)
 
 
 def get_font(size, weight, style):
@@ -912,6 +956,22 @@ class Tab:
             except Exception:
                 continue
             self.rules.extend(CSSParser(body).parse())
+
+        scripts = [
+            node.attributes["src"]
+            for node in tree_to_list(self.nodes, [])
+            if isinstance(node, Element)
+            and node.tag == "script"
+            and "src" in node.attributes
+        ]
+        self.js = JSContext(self)
+        for script in scripts:
+            script_url = url.resolve(script)
+            try:
+                body = script_url.request()
+                print("Script returned: ", self.js.run(script, body))
+            except Exception:
+                continue
 
         self.render()
 
