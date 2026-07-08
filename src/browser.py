@@ -4,6 +4,7 @@ import ssl
 import sys
 import tkinter
 import tkinter.font
+import urllib.parse
 
 # Global Constants
 WIDTH, HEIGHT = 800, 600
@@ -44,7 +45,7 @@ class URL:
             port_part = ""
         return self.scheme + "://" + self.host + port_part + self.path
 
-    def request(self):
+    def request(self, payload=None):
         s = socket.socket(
             family=socket.AF_INET,
             type=socket.SOCK_STREAM,
@@ -56,10 +57,15 @@ class URL:
             ctx = ssl.create_default_context()
             s = ctx.wrap_socket(s, server_hostname=self.host)
 
-        request = "GET {} HTTP/1.0\r\n".format(self.path)
+        method = "POST" if payload else "GET"
+        request = "{} {} HTTP/1.0\r\n".format(method, self.path)
+        if payload:
+            length = len(payload.encode("utf8"))
+            request += "Content-Length: {}\r\n".format(length)
         request += "Host: {}\r\n".format(self.host)
         request += "\r\n"
-
+        if payload:
+            request += payload
         s.send(request.encode("utf8"))
         response = s.makefile("r", encoding="utf8", newline="\r\n")
 
@@ -884,10 +890,10 @@ class Tab:
         self.history = []
         self.focus = None
 
-    def load(self, url):
+    def load(self, url, payload=None):
         self.history.append(url)
         self.url = url
-        body = url.request()
+        body = url.request(payload)
         self.nodes = HTMLParser(body).parse()
 
         self.rules = DEFAULT_STYLE_SHEET.copy()
@@ -959,6 +965,11 @@ class Tab:
                 self.focus = elt
                 elt.is_focused = True
                 return self.render()
+            elif elt.tag == "button":
+                while elt:
+                    if elt.tag == "form" and "action" in elt.attributes:
+                        return self.submit_form(elt)
+                    elt = elt.parent
             elt = elt.parent
         self.render()
 
@@ -966,6 +977,27 @@ class Tab:
         if self.focus:
             self.focus.attributes["value"] += char
             self.render()
+
+    def submit_form(self, elt):
+        inputs = [
+            node
+            for node in tree_to_list(elt, [])
+            if isinstance(node, Element)
+            and node.tag == "input"
+            and "name" in node.attributes
+        ]
+        body = ""
+        for input in inputs:
+            name = input.attributes["name"]
+            value = input.attributes.get("value", "")
+            name = urllib.parse.quote(name)
+            value = urllib.parse.quote(value)
+            body += "&" + name + "=" + value
+        # remove extra '&' in the front
+        body = body[1:]
+
+        url = self.url.resolve(elt.attributes["action"])
+        self.load(url, body)
 
 
 class Chrome:

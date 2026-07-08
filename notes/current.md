@@ -2,7 +2,7 @@
 
 ## Chapter: 8 - Sending Information to Servers
 
-## Current concept: Interacting with form widgets
+## Current concept: Form submission
 
 ## Implemented
 
@@ -25,10 +25,12 @@
 - Added input editing by updating the focused node's `value`.
 - Re-render page content after input edits or focus changes.
 - Draw a text cursor inside the focused input.
+- Added HTTP POST support with request payloads.
+- Added form submission from `<button>` clicks.
+- Collect named input values from forms and URL-encode submitted data.
 
 ## Next to do
 
-- Add form submission.
 - Implement fragment links later if desired.
 
 ## Known Issues
