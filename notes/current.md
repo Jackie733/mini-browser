@@ -2,7 +2,7 @@
 
 ## Chapter: 8 - Sending Information to Servers
 
-## Current concept: Form submission
+## Current concept: Receiving POST requests
 
 ## Implemented
 
@@ -28,9 +28,14 @@
 - Added HTTP POST support with request payloads.
 - Added form submission from `<button>` clicks.
 - Collect named input values from forms and URL-encode submitted data.
+- Added a simple guest book server in `src/server.py`.
+- Parse HTTP GET and POST requests on the server.
+- Decode submitted form bodies and update server-side guest book state.
+- Return generated HTML responses for guest book and 404 pages.
 
 ## Next to do
 
+- Run the toy browser against `http://localhost:8000/`.
 - Implement fragment links later if desired.
 
 ## Known Issues
