@@ -2,7 +2,7 @@
 
 ## Chapter: 8 - Sending Information to Servers
 
-## Current concept: Rendering form widgets
+## Current concept: Interacting with form widgets
 
 ## Implemented
 
@@ -20,10 +20,14 @@
 - Added `InputLayout` for rendering text inputs and simple buttons.
 - Added inline layout handling for `input` and `button` elements.
 - Added `should_paint` filtering to avoid double-painting form controls.
+- Added focus tracking for page `<input>` elements.
+- Split keyboard input between browser chrome and page content.
+- Added input editing by updating the focused node's `value`.
+- Re-render page content after input edits or focus changes.
+- Draw a text cursor inside the focused input.
 
 ## Next to do
 
-- Add focus and editing for page `<input>` elements.
 - Add form submission.
 - Implement fragment links later if desired.
 

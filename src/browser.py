@@ -117,6 +117,7 @@ class Text:
         self.text = text
         self.children = []
         self.parent = parent
+        self.is_focused = False
 
     def __repr__(self):
         return repr(self.text)
@@ -128,6 +129,7 @@ class Element:
         self.attributes = attributes
         self.children = []
         self.parent = parent
+        self.is_focused = False
 
     def __repr__(self):
         attrs = [" " + k + '="' + v + '"' for k, v in self.attributes.items()]
@@ -521,6 +523,10 @@ class InputLayout:
         color = self.node.style["color"]
         cmds.append(DrawText(self.x, self.y, text, self.font, color))
 
+        if self.node.is_focused:
+            cx = self.x + self.font.measure(text)
+            cmds.append(DrawLine(cx, self.y, cx, self.y + self.height, "black", 1))
+
         return cmds
 
 
@@ -876,6 +882,7 @@ class Tab:
         self.url = None
         self.tab_height = tab_height
         self.history = []
+        self.focus = None
 
     def load(self, url):
         self.history.append(url)
@@ -883,7 +890,7 @@ class Tab:
         body = url.request()
         self.nodes = HTMLParser(body).parse()
 
-        rules = DEFAULT_STYLE_SHEET.copy()
+        self.rules = DEFAULT_STYLE_SHEET.copy()
         links = [
             node.attributes["href"]
             for node in tree_to_list(self.nodes, [])
@@ -898,9 +905,12 @@ class Tab:
                 body = style_url.request()
             except Exception:
                 continue
-            rules.extend(CSSParser(body).parse())
-        style(self.nodes, sorted(rules, key=cascade_priority))
+            self.rules.extend(CSSParser(body).parse())
 
+        self.render()
+
+    def render(self):
+        style(self.nodes, sorted(self.rules, key=cascade_priority))
         self.document = DocumentLayout(self.nodes)
         self.document.layout()
         self.display_list = []
@@ -925,6 +935,9 @@ class Tab:
         self.scroll = min(self.scroll + SCROLL_STEP, max_y)
 
     def click(self, x, y):
+        if self.focus:
+            self.focus.is_focused = False
+        self.focus = None
         y += self.scroll
 
         objs = [
@@ -933,7 +946,7 @@ class Tab:
             if obj.x <= x < obj.x + obj.width and obj.y <= y < obj.y + obj.height
         ]
         if not objs:
-            return
+            return self.render()
         elt = objs[-1].node
         while elt:
             if isinstance(elt, Text):
@@ -941,7 +954,18 @@ class Tab:
             elif elt.tag == "a" and "href" in elt.attributes:
                 url = self.url.resolve(elt.attributes["href"])
                 return self.load(url)
+            elif elt.tag == "input":
+                elt.attributes["value"] = ""
+                self.focus = elt
+                elt.is_focused = True
+                return self.render()
             elt = elt.parent
+        self.render()
+
+    def keypress(self, char):
+        if self.focus:
+            self.focus.attributes["value"] += char
+            self.render()
 
 
 class Chrome:
@@ -982,6 +1006,9 @@ class Chrome:
 
         self.bottom = self.urlbar_bottom
 
+    def blur(self):
+        self.focus = None
+
     def click(self, x, y):
         self.focus = None
         if self.newtab_rect.contains_point(x, y):
@@ -1000,6 +1027,8 @@ class Chrome:
     def keypress(self, char):
         if self.focus == "address bar":
             self.address_bar += char
+            return True
+        return False
 
     def enter(self):
         if self.focus == "address bar":
@@ -1141,8 +1170,11 @@ class Browser:
 
     def handle_click(self, e):
         if e.y < self.chrome.bottom:
+            self.focus = None
             self.chrome.click(e.x, e.y)
         else:
+            self.focus = "content"
+            self.chrome.blur()
             tab_y = e.y - self.chrome.bottom
             self.active_tab.click(e.x, tab_y)
         self.draw()
@@ -1152,8 +1184,11 @@ class Browser:
             return
         if not (0x20 <= ord(e.char) < 0x7F):
             return
-        self.chrome.keypress(e.char)
-        self.draw()
+        if self.chrome.keypress(e.char):
+            self.draw()
+        elif self.focus == "content":
+            self.active_tab.keypress(e.char)
+            self.draw()
 
     def handle_enter(self, e):
         self.chrome.enter()
