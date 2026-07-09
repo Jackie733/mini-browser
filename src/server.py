@@ -1,4 +1,5 @@
 import socket
+import os
 import urllib.parse
 
 
@@ -33,6 +34,12 @@ ENTRIES = ["Pavel was here"]
 def do_request(method, url, headers, body):
     if method == "GET" and url == "/":
         return "200 OK", show_comments()
+    if method == "GET" and url == "/comment.js":
+        with open(os.path.join(os.path.dirname(__file__), "comment.js")) as f:
+            return "200 OK", f.read()
+    if method == "GET" and url == "/comment.css":
+        with open(os.path.join(os.path.dirname(__file__), "comment.css")) as f:
+            return "200 OK", f.read()
     elif method == "POST" and url == "/add":
         params = form_decode(body)
         return "200 OK", add_entry(params)
@@ -42,12 +49,15 @@ def do_request(method, url, headers, body):
 
 def show_comments():
     out = "<!doctype html>"
+    out += "<link rel=stylesheet href=/comment.css>"
     out += "<form action=add method=post>"
     out += "<p><input name=guest></p>"
     out += "<p><button>Sign the book!</button></p>"
     out += "</form>"
     for entry in ENTRIES:
         out += "<p>" + entry + "</p>"
+    out += "<strong></strong>"
+    out += "<script src=/comment.js></script>"
     return out
 
 
@@ -62,7 +72,7 @@ def form_decode(body):
 
 
 def add_entry(params):
-    if "guest" in params:
+    if "guest" in params and len(params["guest"]) <= 100:
         ENTRIES.append(params["guest"])
     return show_comments()
 

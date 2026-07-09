@@ -112,6 +112,7 @@ class URL:
 
 
 RUNTIME_JS = open(os.path.join(os.path.dirname(__file__), "runtime.js")).read()
+EVENT_DISPATCH_JS = "new Node(dukpy.handle).dispatchEvent(new Event(dukpy.type))"
 
 
 class JSContext:
@@ -121,6 +122,7 @@ class JSContext:
         self.interp.export_function("log", print)
         self.interp.export_function("querySelectorAll", self.querySelectorAll)
         self.interp.export_function("getAttribute", self.getAttribute)
+        self.interp.export_function("innerHTML_set", self.innerHTML_set)
         self.interp.evaljs(RUNTIME_JS)
         self.node_to_handle = {}
         self.handle_to_node = {}
@@ -156,6 +158,15 @@ class JSContext:
         handle = self.node_to_handle.get(elt, -1)
         do_default = self.interp.evaljs(EVENT_DISPATCH_JS, type=type, handle=handle)
         return not do_default
+
+    def innerHTML_set(self, handle, s):
+        doc = HTMLParser("<html><body>" + s + "</body></html>").parse()
+        new_nodes = doc.children[0].children
+        elt = self.handle_to_node[handle]
+        elt.children = new_nodes
+        for child in elt.children:
+            child.parent = elt
+        self.tab.render()
 
 
 def get_font(size, weight, style):
@@ -928,8 +939,6 @@ def paint_tree(layout_object, display_list):
 DEFAULT_STYLE_SHEET = CSSParser(
     open(os.path.join(os.path.dirname(__file__), "browser.css")).read()
 ).parse()
-
-EVENT_DISPATCH_JS = "new Node(dukpy.handle).dispatchEvent(new Event(dukpy.type))"
 
 
 class Tab:

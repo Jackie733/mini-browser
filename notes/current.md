@@ -2,7 +2,7 @@
 
 ## Chapter: 9 - Running Interactive Scripts
 
-## Current concept: Event Handling
+## Current concept: Chapter complete
 
 ## Implemented
 
@@ -21,6 +21,11 @@
 - Run event listeners with `this` bound to the target `Node`.
 - Added event objects with `preventDefault` support.
 - Stop the browser's default action when JavaScript cancels an event.
+- Added `innerHTML` setter support for JavaScript-driven DOM updates.
+- Re-render after JavaScript changes the HTML tree.
+- Added guest book client-side length validation in `comment.js`.
+- Serve guest book JavaScript and CSS from the toy server.
+- Keep server-side length validation as a non-JavaScript fallback.
 
 ## Previous chapter recap
 
@@ -53,8 +58,7 @@
 
 ## Next to do
 
-- Continue Chapter 9 from DOM mutation.
-- Re-render after JavaScript changes the page.
+- Start Chapter 10.
 - Keep local HTML testing behind `python3 -m http.server`.
 
 ## Known Issues
