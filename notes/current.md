@@ -2,7 +2,7 @@
 
 ## Chapter: 9 - Running Interactive Scripts
 
-## Current concept: Wrapping handles
+## Current concept: Event Handling
 
 ## Implemented
 
@@ -16,6 +16,11 @@
 - Map Python DOM nodes to integer handles so JavaScript can refer to them.
 - Wrap handles in JavaScript `Node` objects.
 - Added `Node.getAttribute` by passing handles back from JavaScript to Python.
+- Added JavaScript-side listener storage with `addEventListener`.
+- Dispatch click, keydown, and submit events from Python into JavaScript.
+- Run event listeners with `this` bound to the target `Node`.
+- Added event objects with `preventDefault` support.
+- Stop the browser's default action when JavaScript cancels an event.
 
 ## Previous chapter recap
 
@@ -48,7 +53,7 @@
 
 ## Next to do
 
-- Continue Chapter 9 from event listeners and DOM mutation.
+- Continue Chapter 9 from DOM mutation.
 - Re-render after JavaScript changes the page.
 - Keep local HTML testing behind `python3 -m http.server`.
 

@@ -152,6 +152,11 @@ class JSContext:
         except dukpy.JSRuntimeError as e:
             print("Script", script, "crashed", e)
 
+    def dispatch_event(self, type, elt):
+        handle = self.node_to_handle.get(elt, -1)
+        do_default = self.interp.evaljs(EVENT_DISPATCH_JS, type=type, handle=handle)
+        return not do_default
+
 
 def get_font(size, weight, style):
     key = (size, weight, style)
@@ -924,6 +929,8 @@ DEFAULT_STYLE_SHEET = CSSParser(
     open(os.path.join(os.path.dirname(__file__), "browser.css")).read()
 ).parse()
 
+EVENT_DISPATCH_JS = "new Node(dukpy.handle).dispatchEvent(new Event(dukpy.type))"
+
 
 class Tab:
     def __init__(self, tab_height):
@@ -1018,14 +1025,20 @@ class Tab:
             if isinstance(elt, Text):
                 pass
             elif elt.tag == "a" and "href" in elt.attributes:
+                if self.js.dispatch_event("click", elt):
+                    return
                 url = self.url.resolve(elt.attributes["href"])
                 return self.load(url)
             elif elt.tag == "input":
+                if self.js.dispatch_event("click", elt):
+                    return
                 elt.attributes["value"] = ""
                 self.focus = elt
                 elt.is_focused = True
                 return self.render()
             elif elt.tag == "button":
+                if self.js.dispatch_event("click", elt):
+                    return
                 while elt:
                     if elt.tag == "form" and "action" in elt.attributes:
                         return self.submit_form(elt)
@@ -1035,10 +1048,14 @@ class Tab:
 
     def keypress(self, char):
         if self.focus:
+            if self.js.dispatch_event("keydown", self.focus):
+                return
             self.focus.attributes["value"] += char
             self.render()
 
     def submit_form(self, elt):
+        if self.js.dispatch_event("submit", elt):
+            return
         inputs = [
             node
             for node in tree_to_list(elt, [])
