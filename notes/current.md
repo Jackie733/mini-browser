@@ -2,7 +2,7 @@
 
 ## Chapter: 10 - Keeping Data Private
 
-## Current concept: SameSite Cookies complete
+## Current concept: Chapter 10 complete
 
 ## Implemented
 
@@ -22,6 +22,9 @@
 - Parse `Set-Cookie` parameters alongside the cookie value.
 - Send `SameSite=Lax` cookies on same-site requests and top-level `GET`
   navigations, but not cross-site `POST` requests.
+- Escape guest book entries and author names before inserting them into HTML.
+- Parse `Content-Security-Policy: default-src` and block disallowed CSS,
+  JavaScript, and XHR requests.
 
 ## Previous chapter recap
 
@@ -30,7 +33,7 @@
 
 ## Next to do
 
-- Continue Chapter 10 from the section after SameSite Cookies.
+- Start the next chapter.
 
 ## Known Issues
 
