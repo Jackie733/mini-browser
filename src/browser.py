@@ -49,7 +49,7 @@ class URL:
             port_part = ""
         return self.scheme + "://" + self.host + port_part + self.path
 
-    def request(self, payload=None):
+    def request(self, referrer, payload=None):
         s = socket.socket(
             family=socket.AF_INET,
             type=socket.SOCK_STREAM,
@@ -67,8 +67,13 @@ class URL:
             request += "Content-Length: {}\r\n".format(length)
         request += "Host: {}\r\n".format(self.host)
         if self.host in COOKIE_JAR:
-            cookie = COOKIE_JAR[self.host]
-            request += "Cookie: {}\r\n".format(cookie)
+            cookie, params = COOKIE_JAR[self.host]
+            allow_cookie = True
+            if referrer and params.get("samesite", "none") == "lax":
+                if method != "GET":
+                    allow_cookie = self.host == referrer.host
+            if allow_cookie:
+                request += "Cookie: {}\r\n".format(cookie)
 
         request += "\r\n"
         if payload:
@@ -89,7 +94,16 @@ class URL:
 
         if "set-cookie" in response_headers:
             cookie = response_headers["set-cookie"]
-            COOKIE_JAR[self.host] = cookie
+            params = {}
+            if ";" in cookie:
+                cookie, rest = cookie.split(";", 1)
+                for param in rest.split(";"):
+                    if "=" in param:
+                        param, value = param.split("=", 1)
+                    else:
+                        value = "true"
+                    params[param.strip().casefold()] = value.casefold()
+            COOKIE_JAR[self.host] = (cookie, params)
 
         assert "transfer-encoding" not in response_headers
         assert "content-encoding" not in response_headers
@@ -185,7 +199,7 @@ class JSContext:
         full_url = self.tab.url.resolve(url)
         if full_url.origin() != self.tab.url.origin():
             raise Exception("Cross-origin XHR request not allowed")
-        return full_url.request(body)
+        return full_url.request(self.tab.url, body)
 
 
 def get_font(size, weight, style):
@@ -970,9 +984,9 @@ class Tab:
         self.focus = None
 
     def load(self, url, payload=None):
+        body = url.request(self.url, payload)
         self.history.append(url)
         self.url = url
-        body = url.request(payload)
         self.nodes = HTMLParser(body).parse()
 
         self.rules = DEFAULT_STYLE_SHEET.copy()
@@ -987,7 +1001,7 @@ class Tab:
         for link in links:
             style_url = url.resolve(link)
             try:
-                body = style_url.request()
+                body = style_url.request(url)
             except Exception:
                 continue
             self.rules.extend(CSSParser(body).parse())
@@ -1003,7 +1017,7 @@ class Tab:
         for script in scripts:
             script_url = url.resolve(script)
             try:
-                body = script_url.request()
+                body = script_url.request(url)
                 print("Script returned: ", self.js.run(script, body))
             except Exception:
                 continue

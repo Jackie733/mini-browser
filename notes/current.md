@@ -2,7 +2,7 @@
 
 ## Chapter: 10 - Keeping Data Private
 
-## Current concept: read through CSRF nonces; next section is SameSite Cookies
+## Current concept: SameSite Cookies complete
 
 ## Implemented
 
@@ -19,6 +19,9 @@
 - Added `URL.origin()` and enforce same-origin checks for XHR.
 - Added CSRF nonce generation in the guest book form.
 - Reject guest book posts with a missing or mismatched nonce.
+- Parse `Set-Cookie` parameters alongside the cookie value.
+- Send `SameSite=Lax` cookies on same-site requests and top-level `GET`
+  navigations, but not cross-site `POST` requests.
 
 ## Previous chapter recap
 
@@ -27,10 +30,7 @@
 
 ## Next to do
 
-- Read and implement SameSite Cookies.
-- Parse cookie parameters from `Set-Cookie`.
-- Pass request referrer context so the browser can decide when to send
-  `SameSite=Lax` cookies.
+- Continue Chapter 10 from the section after SameSite Cookies.
 
 ## Known Issues
 
